@@ -5,7 +5,7 @@ from sympy import symbols, Eq, solve, log
 st.title("Bernoulli's Equation Solver")
 st.write("""
 This app solves Bernoulli's equation for one unknown, including head loss, pump work, and turbine work.
-It also calculates the Reynolds Number, Moody's Friction Factor, and Power from heads.
+It also calculates the Reynolds Number, Moody's Friction Factor, Power from heads, and Major Friction Loss.
 """)
 
 # Sidebar for user inputs
@@ -138,11 +138,54 @@ if st.button("Calculate Power"):
         power = rho * g * head * flow_rate
         st.success(f"The power is: **{round(float(power), 7)} W**")
 
+# New section for Major Friction Loss Calculation
+st.header("Major Friction Loss Calculator")
+
+# Input fields for Major Friction Loss
+st.write("### Major Friction Loss (Darcy-Weisbach Equation)")
+pipe_length = st.number_input("Pipe length (L, m)", value=None, format="%f", help="Length of the pipe.")
+pipe_diameter = st.number_input("Pipe diameter (D, m)", value=None, format="%f", help="Inner diameter of the pipe.")
+pipe_roughness = st.number_input("Pipe roughness (ε, m)", value=None, format="%f", help="Roughness of the pipe's inner surface.")
+flow_velocity = st.number_input("Flow velocity (v, m/s)", value=None, format="%f", help="Velocity of the fluid in the pipe.")
+
+# Calculate Major Friction Loss
+if st.button("Calculate Major Friction Loss"):
+    if rho is None or pipe_length is None or pipe_diameter is None or pipe_roughness is None or flow_velocity is None:
+        st.error("All inputs (rho, L, D, ε, v) must be provided.")
+    else:
+        # Calculate Reynolds Number
+        Re = (rho * flow_velocity * pipe_diameter) / viscosity
+
+        # Determine friction factor (f)
+        if Re < 2000:  # Laminar flow
+            f = 64 / Re
+        elif Re >= 4000:  # Turbulent flow (Colebrook-White equation)
+            # Initial guess for f
+            f = 0.02
+            tolerance = 1e-6
+            max_iterations = 1000
+            for i in range(max_iterations):
+                f_new = (-2 * log((pipe_roughness / pipe_diameter) / 3.7 + 2.51 / (Re * f**0.5)) / log(10))**-2
+                if abs(f_new - f) < tolerance:
+                    f = f_new
+                    break
+                f = f_new
+        else:  # Transitional flow
+            st.warning("The flow is in the transitional region. Friction factor cannot be accurately calculated.")
+            f = None
+
+        if f is not None:
+            # Calculate head loss due to friction
+            h_f = f * (pipe_length / pipe_diameter) * (flow_velocity**2 / (2 * g))
+            st.success(f"The major friction loss is: **{round(float(h_f), 7)} m**")
+        else:
+            st.error("Cannot calculate friction loss for transitional flow.")
+
 # Instructions
 st.write("### Instructions:")
 st.write("""
 1. Fill in all known values in the sidebar.
 2. Leave one field blank for the unknown variable.
 3. Click the 'Solve' button to calculate the unknown.
-4. Use the sections below to calculate Reynolds Number, Moody's Friction Factor, and Power.
+4. Use the sections below to calculate Reynolds Number, Moody's Friction Factor, Power, and Major Friction Loss.
 """)
