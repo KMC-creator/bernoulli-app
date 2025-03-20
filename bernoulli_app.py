@@ -44,10 +44,10 @@ if st.sidebar.button("Solve Bernoulli's Equation"):
         # Assign variables
         P1, P2, v1, v2, h1, h2, rho, hl_meters, Wp_meters, Wt_meters = unknowns
 
-        # Convert head loss, pump work, and turbine work from meters to J/kg
-        hl = hl_meters * g if hl_meters is not None else None
-        Wp = Wp_meters * g if Wp_meters is not None else None
-        Wt = Wt_meters * g if Wt_meters is not None else None
+        # Convert head loss, pump work, and turbine work from meters to pressure (Pa)
+        hl = rho * g * hl_meters if hl_meters is not None else None
+        Wp = rho * g * Wp_meters if Wp_meters is not None else None
+        Wt = rho * g * Wt_meters if Wt_meters is not None else None
 
         # Define Bernoulli's equation
         equation = Eq(P1 + 0.5 * rho * v1**2 + rho * g * h1 + (Wp if Wp else 0), 
