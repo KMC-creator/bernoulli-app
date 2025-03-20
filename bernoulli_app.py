@@ -5,7 +5,7 @@ from sympy import symbols, Eq, solve, log
 st.title("Bernoulli's Equation Solver")
 st.write("""
 This app solves Bernoulli's equation for one unknown, including head loss, pump work, and turbine work.
-It also calculates the Reynolds Number and Moody's Friction Factor.
+It also calculates the Reynolds Number, Moody's Friction Factor, and associated power.
 """)
 
 # Sidebar for user inputs
@@ -21,28 +21,41 @@ h1 = st.sidebar.number_input("Height at point 1 (h1, m)", value=None, format="%f
 h2 = st.sidebar.number_input("Height at point 2 (h2, m)", value=None, format="%f")
 rho = st.sidebar.number_input("Fluid density (rho, kg/m³)", value=None, format="%f")
 g = st.sidebar.number_input("Gravitational acceleration (g, m/s²)", value=9.81, format="%f")
-hl = st.sidebar.number_input("Head loss (hl, J/kg)", value=None, format="%f")
-Wp = st.sidebar.number_input("Pump work (Wp, J/kg)", value=None, format="%f")
-Wt = st.sidebar.number_input("Turbine work (Wt, J/kg)", value=None, format="%f")
+hl_meters = st.sidebar.number_input("Head loss (hl, m)", value=None, format="%f", help="Head loss in meters of fluid.")
+Wp_meters = st.sidebar.number_input("Pump head (Wp, m)", value=None, format="%f", help="Pump head in meters of fluid.")
+Wt_meters = st.sidebar.number_input("Turbine head (Wt, m)", value=None, format="%f", help="Turbine head in meters of fluid.")
+Q = st.sidebar.number_input("Volumetric flow rate (Q, m³/s)", value=None, format="%f", help="Volumetric flow rate of the fluid.")
 
 # Solve button for Bernoulli's equation
 if st.sidebar.button("Solve Bernoulli's Equation"):
     # Validate inputs
-    inputs = [P1, P2, v1, v2, h1, h2, rho, hl, Wp, Wt]
+    inputs = [P1, P2, v1, v2, h1, h2, rho, hl_meters, Wp_meters, Wt_meters]
     if inputs.count(None) != 1:
         st.error("Exactly one variable must be left blank (unknown).")
     elif rho is None:
         st.error("Density (rho) must be provided.")
+    elif Q is None or Q <= 0:
+        st.error("Volumetric flow rate (Q) must be provided and positive.")
     else:
+        # Convert head loss, pump work, and turbine work from meters to J/kg
+        hl = hl_meters * g if hl_meters is not None else None
+        Wp = Wp_meters * g if Wp_meters is not None else None
+        Wt = Wt_meters * g if Wt_meters is not None else None
+
         # Define the unknown variable
-        unknowns = [P1, P2, v1, v2, h1, h2, rho, hl, Wp, Wt]
+        unknowns = [P1, P2, v1, v2, h1, h2, rho, hl_meters, Wp_meters, Wt_meters]
         missing_vars = [i for i, val in enumerate(unknowns) if val is None]
         missing_index = missing_vars[0]
         missing_var = symbols('x')
         unknowns[missing_index] = missing_var
 
         # Assign variables
-        P1, P2, v1, v2, h1, h2, rho, hl, Wp, Wt = unknowns
+        P1, P2, v1, v2, h1, h2, rho, hl_meters, Wp_meters, Wt_meters = unknowns
+
+        # Convert head loss, pump work, and turbine work from meters to J/kg
+        hl = hl_meters * g if hl_meters is not None else None
+        Wp = Wp_meters * g if Wp_meters is not None else None
+        Wt = Wt_meters * g if Wt_meters is not None else None
 
         # Define Bernoulli's equation
         equation = Eq(P1 + 0.5 * rho * v1**2 + rho * g * h1 + (Wp if Wp else 0), 
@@ -58,11 +71,22 @@ if st.sidebar.button("Solve Bernoulli's Equation"):
             st.error("No physically meaningful solution found.")
         else:
             # Define unit based on missing variable
-            units = ["Pa", "Pa", "m/s", "m/s", "m", "m", "kg/m³", "J/kg", "J/kg", "J/kg"]
+            units = ["Pa", "Pa", "m/s", "m/s", "m", "m", "kg/m³", "m", "m", "m"]
             unit = units[missing_index]
 
             # Display the result
             st.success(f"The solved value is: **{round(float(valid_solution[0]), 7)} {unit}**")
+
+            # Calculate power for head loss, pump, and turbine
+            if hl_meters is not None:
+                power_hl = rho * g * Q * hl_meters
+                st.write(f"Power loss due to head loss: **{round(float(power_hl), 7)} W**")
+            if Wp_meters is not None:
+                power_pump = rho * g * Q * Wp_meters
+                st.write(f"Pump power: **{round(float(power_pump), 7)} W**")
+            if Wt_meters is not None:
+                power_turbine = rho * g * Q * Wt_meters
+                st.write(f"Turbine power: **{round(float(power_turbine), 7)} W**")
 
 # New section for Reynolds Number and Moody's Friction Factor
 st.header("Reynolds Number and Moody's Friction Factor Calculator")
