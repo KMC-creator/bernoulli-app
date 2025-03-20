@@ -80,13 +80,13 @@ if st.sidebar.button("Solve Bernoulli's Equation"):
             # Calculate power for head loss, pump, and turbine
             if hl_meters is not None:
                 power_hl = rho * g * Q * hl_meters
-                st.write(f"Power loss due to head loss: **{round(float(power_hl), 7)} W**")
+                st.write(f"Power loss due to head loss: **{round(float(power_hl.evalf()), 7)} W**")
             if Wp_meters is not None:
                 power_pump = rho * g * Q * Wp_meters
-                st.write(f"Pump power: **{round(float(power_pump), 7)} W**")
+                st.write(f"Pump power: **{round(float(power_pump.evalf()), 7)} W**")
             if Wt_meters is not None:
                 power_turbine = rho * g * Q * Wt_meters
-                st.write(f"Turbine power: **{round(float(power_turbine), 7)} W**")
+                st.write(f"Turbine power: **{round(float(power_turbine.evalf()), 7)} W**")
 
 # New section for Reynolds Number and Moody's Friction Factor
 st.header("Reynolds Number and Moody's Friction Factor Calculator")
