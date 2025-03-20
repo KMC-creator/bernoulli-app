@@ -34,11 +34,6 @@ if st.sidebar.button("Solve Bernoulli's Equation"):
     elif rho is None:
         st.error("Density (rho) must be provided.")
     else:
-        # Convert head loss, pump work, and turbine work from meters to J/kg
-        hl = hl_meters * g if hl_meters is not None else None
-        Wp = Wp_meters * g if Wp_meters is not None else None
-        Wt = Wt_meters * g if Wt_meters is not None else None
-
         # Define the unknown variable
         unknowns = [P1, P2, v1, v2, h1, h2, rho, hl_meters, Wp_meters, Wt_meters]
         missing_vars = [i for i, val in enumerate(unknowns) if val is None]
