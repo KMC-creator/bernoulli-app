@@ -104,7 +104,7 @@ if st.button("Calculate Moody's Friction Factor"):
             tolerance = 1e-6
             max_iterations = 1000
             for i in range(max_iterations):
-                f_new = (-2 * log((roughness / diameter) / 3.7 + 2.51 / (Re * f**0.5), 10)**-2
+                f_new = (-2 * log((roughness / diameter) / 3.7 + 2.51 / (Re * f**0.5)) / log(10))**-2
                 if abs(f_new - f) < tolerance:
                     f = f_new
                     break
