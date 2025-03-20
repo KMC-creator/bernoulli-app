@@ -21,9 +21,9 @@ h1 = st.sidebar.number_input("Height at point 1 (h1, m)", value=None, format="%f
 h2 = st.sidebar.number_input("Height at point 2 (h2, m)", value=None, format="%f")
 rho = st.sidebar.number_input("Fluid density (rho, kg/m³)", value=None, format="%f")
 g = st.sidebar.number_input("Gravitational acceleration (g, m/s²)", value=9.81, format="%f")
-hl = st.sidebar.number_input("Head loss (hl, J/kg)", value=0.0, format="%f")
-Wp = st.sidebar.number_input("Pump work (Wp, J/kg)", value=0.0, format="%f")
-Wt = st.sidebar.number_input("Turbine work (Wt, J/kg)", value=0.0, format="%f")
+hl = st.sidebar.number_input("Head loss (hl, J/kg)", value=None, format="%f")
+Wp = st.sidebar.number_input("Pump work (Wp, J/kg)", value=None, format="%f")
+Wt = st.sidebar.number_input("Turbine work (Wt, J/kg)", value=None, format="%f")
 
 # Solve button for Bernoulli's equation
 if st.sidebar.button("Solve Bernoulli's Equation"):
@@ -45,8 +45,8 @@ if st.sidebar.button("Solve Bernoulli's Equation"):
         P1, P2, v1, v2, h1, h2, rho, hl, Wp, Wt = unknowns
 
         # Define Bernoulli's equation
-        equation = Eq(P1 + 0.5 * rho * v1**2 + rho * g * h1 + Wp, 
-                      P2 + 0.5 * rho * v2**2 + rho * g * h2 + hl + Wt)
+        equation = Eq(P1 + 0.5 * rho * v1**2 + rho * g * h1 + (Wp if Wp else 0), 
+                      P2 + 0.5 * rho * v2**2 + rho * g * h2 + (hl if hl else 0) + (Wt if Wt else 0))
 
         # Solve for the unknown variable
         solution = solve(equation, missing_var)
