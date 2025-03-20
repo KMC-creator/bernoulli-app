@@ -5,7 +5,7 @@ from sympy import symbols, Eq, solve, log
 st.title("Bernoulli's Equation Solver")
 st.write("""
 This app solves Bernoulli's equation for one unknown, including head loss, pump work, and turbine work.
-It also calculates the Reynolds Number, Moody's Friction Factor, and associated power (if flow rate is provided).
+It also calculates the Reynolds Number and Moody's Friction Factor.
 """)
 
 # Sidebar for user inputs
@@ -24,7 +24,6 @@ g = st.sidebar.number_input("Gravitational acceleration (g, m/s²)", value=9.81,
 hl_meters = st.sidebar.number_input("Head loss (hl, m)", value=None, format="%f", help="Head loss in meters of fluid.")
 Wp_meters = st.sidebar.number_input("Pump head (Wp, m)", value=None, format="%f", help="Pump head in meters of fluid.")
 Wt_meters = st.sidebar.number_input("Turbine head (Wt, m)", value=None, format="%f", help="Turbine head in meters of fluid.")
-Q = st.sidebar.number_input("Volumetric flow rate (Q, m³/s)", value=None, format="%f", help="Volumetric flow rate of the fluid (optional for power calculations).")
 
 # Solve button for Bernoulli's equation
 if st.sidebar.button("Solve Bernoulli's Equation"):
@@ -63,7 +62,7 @@ if st.sidebar.button("Solve Bernoulli's Equation"):
         solution = solve(equation, missing_var)
 
         # Filter valid solutions
-        valid_solution = [sol.evalf() for sol in solution if sol.is_real and sol >= 0]
+        valid_solution = [sol.evalf() for sol in solution if sol.is_real]
 
         if not valid_solution:
             st.error("No physically meaningful solution found.")
@@ -72,22 +71,12 @@ if st.sidebar.button("Solve Bernoulli's Equation"):
             units = ["Pa", "Pa", "m/s", "m/s", "m", "m", "kg/m³", "m", "m", "m"]
             unit = units[missing_index]
 
-            # Display the result
-            st.success(f"The solved value is: **{round(float(valid_solution[0]), 7)} {unit}**")
-
-            # Calculate power for head loss, pump, and turbine (if Q is provided)
-            if Q is not None and Q > 0:
-                if hl_meters is not None:
-                    power_hl = rho * g * Q * hl_meters
-                    st.write(f"Power loss due to head loss: **{round(float(power_hl.evalf()), 7)} W**")
-                if Wp_meters is not None:
-                    power_pump = rho * g * Q * Wp_meters
-                    st.write(f"Pump power: **{round(float(power_pump.evalf()), 7)} W**")
-                if Wt_meters is not None:
-                    power_turbine = rho * g * Q * Wt_meters
-                    st.write(f"Turbine power: **{round(float(power_turbine.evalf()), 7)} W**")
+            # Check if the solution is physically meaningful
+            value = float(valid_solution[0])
+            if value < 0:  # Non-negative check for most parameters
+                st.warning(f"The calculated value is **{round(value, 7)} {unit}**, which is physically impossible.")
             else:
-                st.warning("Volumetric flow rate (Q) is missing or invalid. Power calculations skipped.")
+                st.success(f"The solved value is: **{round(value, 7)} {unit}**")
 
 # New section for Reynolds Number and Moody's Friction Factor
 st.header("Reynolds Number and Moody's Friction Factor Calculator")
@@ -145,5 +134,4 @@ st.write("""
 2. Leave one field blank for the unknown variable.
 3. Click the 'Solve' button to calculate the unknown.
 4. Use the sections below to calculate Reynolds Number and Moody's Friction Factor.
-5. Provide the volumetric flow rate (Q) to calculate power.
 """)
