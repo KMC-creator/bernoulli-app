@@ -25,53 +25,62 @@ hl_meters = st.sidebar.number_input("Head loss (hl, m)", value=None, format="%f"
 Wp_meters = st.sidebar.number_input("Pump head (Wp, m)", value=None, format="%f", help="Pump head in meters of fluid.")
 Wt_meters = st.sidebar.number_input("Turbine head (Wt, m)", value=None, format="%f", help="Turbine head in meters of fluid.")
 
+# Function to solve Bernoulli's equation
+def solve_bernoulli(P1, P2, v1, v2, h1, h2, rho, hl_meters, Wp_meters, Wt_meters, g):
+    # Define the unknown variable
+    unknowns = [P1, P2, v1, v2, h1, h2, rho, hl_meters, Wp_meters, Wt_meters]
+    missing_vars = [i for i, val in enumerate(unknowns) if val is None]
+    if len(missing_vars) != 1:
+        return None, None, "Exactly one variable must be left blank (unknown)."
+    
+    missing_index = missing_vars[0]
+    missing_var = symbols('x')
+    unknowns[missing_index] = missing_var
+
+    # Assign variables
+    P1, P2, v1, v2, h1, h2, rho, hl_meters, Wp_meters, Wt_meters = unknowns
+
+    # Convert head loss, pump work, and turbine work from meters to pressure (Pa)
+    hl = rho * g * hl_meters if hl_meters is not None else None
+    Wp = rho * g * Wp_meters if Wp_meters is not None else None
+    Wt = rho * g * Wt_meters if Wt_meters is not None else None
+
+    # Define Bernoulli's equation
+    equation = Eq(P1 + 0.5 * rho * v1**2 + rho * g * h1 + (Wp if Wp else 0), 
+                  P2 + 0.5 * rho * v2**2 + rho * g * h2 + (hl if hl else 0) + (Wt if Wt else 0))
+
+    # Solve for the unknown variable
+    solution = solve(equation, missing_var)
+
+    # Filter valid solutions
+    valid_solution = [sol.evalf() for sol in solution if sol.is_real]
+
+    if not valid_solution:
+        return None, None, "No physically meaningful solution found."
+    else:
+        # Define unit based on missing variable
+        units = ["Pa", "Pa", "m/s", "m/s", "m", "m", "kg/m³", "m", "m", "m"]
+        unit = units[missing_index]
+
+        # Check if the solution is physically meaningful
+        value = float(valid_solution[0])
+        if value < 0:  # Non-negative check for most parameters
+            return value, unit, f"The calculated value is **{round(value, 7)} {unit}**, which is physically impossible."
+        else:
+            return value, unit, f"The solved value is: **{round(value, 7)} {unit}**"
+
 # Solve button for Bernoulli's equation
 if st.sidebar.button("Solve Bernoulli's Equation"):
-    # Validate inputs
-    inputs = [P1, P2, v1, v2, h1, h2, rho, hl_meters, Wp_meters, Wt_meters]
-    if inputs.count(None) != 1:
-        st.error("Exactly one variable must be left blank (unknown).")
-    elif rho is None:
+    if rho is None:
         st.error("Density (rho) must be provided.")
     else:
-        # Define the unknown variable
-        unknowns = [P1, P2, v1, v2, h1, h2, rho, hl_meters, Wp_meters, Wt_meters]
-        missing_vars = [i for i, val in enumerate(unknowns) if val is None]
-        missing_index = missing_vars[0]
-        missing_var = symbols('x')
-        unknowns[missing_index] = missing_var
-
-        # Assign variables
-        P1, P2, v1, v2, h1, h2, rho, hl_meters, Wp_meters, Wt_meters = unknowns
-
-        # Convert head loss, pump work, and turbine work from meters to pressure (Pa)
-        hl = rho * g * hl_meters if hl_meters is not None else None
-        Wp = rho * g * Wp_meters if Wp_meters is not None else None
-        Wt = rho * g * Wt_meters if Wt_meters is not None else None
-
-        # Define Bernoulli's equation
-        equation = Eq(P1 + 0.5 * rho * v1**2 + rho * g * h1 + (Wp if Wp else 0), 
-                      P2 + 0.5 * rho * v2**2 + rho * g * h2 + (hl if hl else 0) + (Wt if Wt else 0))
-
-        # Solve for the unknown variable
-        solution = solve(equation, missing_var)
-
-        # Filter valid solutions
-        valid_solution = [sol.evalf() for sol in solution if sol.is_real]
-
-        if not valid_solution:
-            st.error("No physically meaningful solution found.")
+        value, unit, message = solve_bernoulli(P1, P2, v1, v2, h1, h2, rho, hl_meters, Wp_meters, Wt_meters, g)
+        if value is None:
+            st.error(message)
+        elif value < 0:
+            st.warning(message)
         else:
-            # Define unit based on missing variable
-            units = ["Pa", "Pa", "m/s", "m/s", "m", "m", "kg/m³", "m", "m", "m"]
-            unit = units[missing_index]
-
-            # Check if the solution is physically meaningful
-            value = float(valid_solution[0])
-            if value < 0:  # Non-negative check for most parameters
-                st.warning(f"The calculated value is **{round(value, 7)} {unit}**, which is physically impossible.")
-            else:
-                st.success(f"The solved value is: **{round(value, 7)} {unit}**")
+            st.success(message)
 
 # New section for Power Calculation
 st.header("Power Calculation from Heads")
