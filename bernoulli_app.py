@@ -254,7 +254,7 @@ if st.button("Calculate Iterative Friction Loss"):
             st.success(f"The major friction loss is: **{round(float(h_f), 7)} m**")
         else:
             st.error("The solution did not converge. Check inputs or try a different initial guess.")
-            
+
 # Instructions
 st.write("### Instructions:")
 st.write("""
