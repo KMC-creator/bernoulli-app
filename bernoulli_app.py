@@ -255,6 +255,73 @@ if st.button("Calculate Iterative Friction Loss"):
         else:
             st.error("The solution did not converge. Check inputs or try a different initial guess.")
 
+#New Section for Flow in Porous média
+
+import streamlit as st
+from sympy import symbols, Eq, solve, log
+
+def porous_media_solver(Q=None, dP=None, L=None, mu=None, rho=None, dp=None, epsilon=None, g=9.81):
+    """
+    Automated solver for flow in porous media using:
+    - Darcy's Law (laminar flow)
+    - Forchheimer Equation (transition flow)
+    - Blake–Kozeny Equation (laminar in packed beds)
+    - Ergun Equation (full range from laminar to turbulent)
+    - Burke–Plummer Equation (turbulent packed beds)
+    
+    Parameters:
+    - Q: Volumetric flow rate (m³/s)
+    - dP: Pressure drop (Pa)
+    - L: Length of porous medium (m)
+    - mu: Fluid viscosity (Pa·s)
+    - rho: Fluid density (kg/m³)
+    - dp: Average particle diameter (m)
+    - epsilon: Porosity (void fraction, 0-1)
+    - g: Gravitational acceleration (default 9.81 m/s²)
+    
+    Returns:
+    - The solved value, equation used, and SI units.
+    """
+    # Check for missing parameters
+    missing_params = [name for name, val in zip(["dP", "L", "mu", "rho", "dp", "epsilon"], [dP, L, mu, rho, dp, epsilon]) if val is None]
+    if missing_params:
+        return None, f"Missing parameters: {', '.join(missing_params)}"
+    
+    # Ensure epsilon and dp are nonzero
+    if epsilon == 0 or dp == 0:
+        return None, "Porosity (epsilon) and particle diameter (dp) must be greater than zero."
+    
+    v = Q / (epsilon * dp**2) if Q is not None else symbols('v')
+    Re = (rho * v * dp) / mu
+    
+    if Re < 1:  # Darcy's Law
+        eq_used = "Darcy's Law"
+        equation = Eq(dP / L, (mu / dp**2) * v)
+    elif 1 <= Re < 10:  # Forchheimer Equation
+        eq_used = "Forchheimer Equation"
+        equation = Eq(dP / L, (mu / dp**2) * v + (rho / dp) * v**2)
+    elif 10 <= Re < 2000:  # Blake-Kozeny Equation (Laminar in Packed Beds)
+        eq_used = "Blake–Kozeny Equation"
+        equation = Eq(dP / L, (180 * mu * (1 - epsilon)**2) / (epsilon**3 * dp**2) * v)
+    elif 2000 <= Re < 4000:  # Ergun Equation (Transition to Turbulence)
+        eq_used = "Ergun Equation"
+        equation = Eq(dP / L, ((150 * mu * (1 - epsilon)**2) / (epsilon**3 * dp**2) * v) + ((1.75 * rho * (1 - epsilon)) / (epsilon**3 * dp) * v**2))
+    else:  # Burke–Plummer Equation (Turbulent Flow)
+        eq_used = "Burke–Plummer Equation"
+        equation = Eq(dP / L, ((1.75 * rho * (1 - epsilon)) / (epsilon**3 * dp) * v**2))
+    
+    solution = solve(equation, v)
+    valid_solution = [sol.evalf() for sol in solution if sol.is_real and sol >= 0]
+    if not valid_solution:
+        return None, "No physically meaningful solution found."
+    
+    return round(float(valid_solution[0]), 7), eq_used
+
+# Example Usage:
+# result, equation_used = porous_media_solver(Q=0.01, dP=1000, L=1, mu=0.001, rho=1000, dp=0.01, epsilon=0.4)
+# print("Solved value:", result, "Equation used:", equation_used)
+
+
 # Instructions
 st.write("### Instructions:")
 st.write("""
