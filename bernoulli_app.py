@@ -5,7 +5,7 @@ from sympy import symbols, Eq, solve, log
 st.title("Bernoulli's Equation Solver")
 st.write("""
 This app solves Bernoulli's equation for one unknown, including head loss, pump work, and turbine work.
-It also calculates the Reynolds Number, Moody's Friction Factor, Power from heads, and Major Friction Loss.
+It also calculates the Reynolds Number, Moody's Friction Factor, Power from heads, Major Friction Loss, and Iterative Friction Loss.
 """)
 
 # Sidebar for user inputs
@@ -72,6 +72,15 @@ if st.sidebar.button("Solve Bernoulli's Equation"):
                 st.warning(f"The calculated value is **{round(value, 7)} {unit}**, which is physically impossible.")
             else:
                 st.success(f"The solved value is: **{round(value, 7)} {unit}**")
+
+# New section for Power Calculation
+st.header("Power Calculation from Heads")
+
+# Input fields for Power Calculation
+st.write("### Power from Pump or Turbine Head")
+flow_rate = st.number_input("Flow rate (Q, m³/s)", value=None, format="%f", help="Volumetric flow rate of the fluid.")
+head = st.number_input("Head (m)", value=None, format="%f", help="Pump head or turbine head in meters.")
+
 # Calculate Power
 if st.button("Calculate Power"):
     if rho is None or g is None or flow_rate is None or head is None:
@@ -79,6 +88,7 @@ if st.button("Calculate Power"):
     else:
         power = rho * g * head * flow_rate
         st.success(f"The power is: **{round(float(power), 7)} W**")
+
 # New section for Reynolds Number and Moody's Friction Factor
 st.header("Reynolds Number and Moody's Friction Factor Calculator")
 
@@ -127,14 +137,6 @@ if st.button("Calculate Moody's Friction Factor"):
             st.success(f"The flow is turbulent. Friction factor (f) is: **{round(float(f), 7)}**")
         else:  # Transitional flow
             st.warning("The flow is in the transitional region. Friction factor cannot be accurately calculated.")
-
-# New section for Power Calculation
-st.header("Power Calculation from Heads")
-
-# Input fields for Power Calculation
-st.write("### Power from Pump or Turbine Head")
-flow_rate = st.number_input("Flow rate (Q, m³/s)", value=None, format="%f", help="Volumetric flow rate of the fluid.")
-head = st.number_input("Head (m)", value=None, format="%f", help="Pump head or turbine head in meters.")
 
 # New section for Major Friction Loss Calculation
 st.header("Major Friction Loss Calculator")
@@ -243,12 +245,12 @@ if st.button("Calculate Iterative Friction Loss"):
             st.success(f"The major friction loss is: **{round(float(h_f), 7)} m**")
         else:
             st.error("The solution did not converge. Check inputs or try a different initial guess.")
-            
+
 # Instructions
 st.write("### Instructions:")
 st.write("""
 1. Fill in all known values in the sidebar.
 2. Leave one field blank for the unknown variable.
 3. Click the 'Solve' button to calculate the unknown.
-4. Use the sections below to calculate Reynolds Number, Moody's Friction Factor, Power, and Major Friction Loss.
+4. Use the sections below to calculate Reynolds Number, Moody's Friction Factor, Power, Major Friction Loss, and Iterative Friction Loss.
 """)
