@@ -72,7 +72,13 @@ if st.sidebar.button("Solve Bernoulli's Equation"):
                 st.warning(f"The calculated value is **{round(value, 7)} {unit}**, which is physically impossible.")
             else:
                 st.success(f"The solved value is: **{round(value, 7)} {unit}**")
-
+# Calculate Power
+if st.button("Calculate Power"):
+    if rho is None or g is None or flow_rate is None or head is None:
+        st.error("Density (rho), gravitational acceleration (g), flow rate (Q), and head must be provided.")
+    else:
+        power = rho * g * head * flow_rate
+        st.success(f"The power is: **{round(float(power), 7)} W**")
 # New section for Reynolds Number and Moody's Friction Factor
 st.header("Reynolds Number and Moody's Friction Factor Calculator")
 
@@ -130,14 +136,6 @@ st.write("### Power from Pump or Turbine Head")
 flow_rate = st.number_input("Flow rate (Q, m³/s)", value=None, format="%f", help="Volumetric flow rate of the fluid.")
 head = st.number_input("Head (m)", value=None, format="%f", help="Pump head or turbine head in meters.")
 
-# Calculate Power
-if st.button("Calculate Power"):
-    if rho is None or g is None or flow_rate is None or head is None:
-        st.error("Density (rho), gravitational acceleration (g), flow rate (Q), and head must be provided.")
-    else:
-        power = rho * g * head * flow_rate
-        st.success(f"The power is: **{round(float(power), 7)} W**")
-
 # New section for Major Friction Loss Calculation
 st.header("Major Friction Loss Calculator")
 
@@ -181,6 +179,71 @@ if st.button("Calculate Major Friction Loss"):
         else:
             st.error("Cannot calculate friction loss for transitional flow.")
 
+# New section for Iterative Friction Loss Calculation
+st.header("Iterative Friction Loss Calculator")
+
+# Input fields for Iterative Friction Loss
+st.write("### Iterative Friction Loss (Unknown Flow Velocity)")
+pipe_length_iter = st.number_input("Pipe length (L, m)", value=None, format="%f", help="Length of the pipe.")
+pipe_diameter_iter = st.number_input("Pipe diameter (D, m)", value=None, format="%f", help="Inner diameter of the pipe.")
+pipe_roughness_iter = st.number_input("Pipe roughness (ε, m)", value=None, format="%f", help="Roughness of the pipe's inner surface.")
+flow_rate_iter = st.number_input("Flow rate (Q, m³/s)", value=None, format="%f", help="Volumetric flow rate of the fluid.")
+
+# Calculate Iterative Friction Loss
+if st.button("Calculate Iterative Friction Loss"):
+    if rho is None or pipe_length_iter is None or pipe_diameter_iter is None or pipe_roughness_iter is None or flow_rate_iter is None:
+        st.error("All inputs (rho, L, D, ε, Q) must be provided.")
+    else:
+        # Initial guess for flow velocity
+        v_guess = 1.0  # Initial guess for velocity (m/s)
+        tolerance = 1e-6  # Convergence tolerance
+        max_iterations = 1000  # Maximum number of iterations
+        converged = False
+
+        for i in range(max_iterations):
+            # Calculate Reynolds Number
+            Re = (rho * v_guess * pipe_diameter_iter) / viscosity
+
+            # Determine friction factor (f)
+            if Re < 2000:  # Laminar flow
+                f = 64 / Re
+            elif Re >= 4000:  # Turbulent flow (Colebrook-White equation)
+                # Initial guess for f
+                f = 0.02
+                for j in range(max_iterations):
+                    f_new = (-2 * log((pipe_roughness_iter / pipe_diameter_iter) / 3.7 + 2.51 / (Re * f**0.5)) / log(10))**-2
+                    if abs(f_new - f) < tolerance:
+                        f = f_new
+                        break
+                    f = f_new
+            else:  # Transitional flow
+                st.warning("The flow is in the transitional region. Friction factor cannot be accurately calculated.")
+                f = None
+                break
+
+            if f is not None:
+                # Calculate head loss due to friction
+                h_f = f * (pipe_length_iter / pipe_diameter_iter) * (v_guess**2 / (2 * g))
+
+                # Update flow velocity using the flow rate
+                v_new = flow_rate_iter / (3.1416 * (pipe_diameter_iter / 2)**2)
+
+                # Check for convergence
+                if abs(v_new - v_guess) < tolerance:
+                    converged = True
+                    break
+
+                # Update guess for velocity
+                v_guess = v_new
+            else:
+                break
+
+        if converged:
+            st.success(f"The flow velocity is: **{round(float(v_guess), 7)} m/s**")
+            st.success(f"The major friction loss is: **{round(float(h_f), 7)} m**")
+        else:
+            st.error("The solution did not converge. Check inputs or try a different initial guess.")
+            
 # Instructions
 st.write("### Instructions:")
 st.write("""
